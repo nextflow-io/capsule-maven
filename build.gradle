@@ -1,16 +1,11 @@
-buildscript {
-    dependencies {
-        classpath 'net.sf.proguard:proguard-gradle:5.0'
-    }
-}
-
 plugins {
     id 'java'
     id 'com.github.johnrengelman.shadow' version '1.2.3'
     id 'maven'
     id 'signing'
-    // id 'net.sf.proguard.proguard-gradle' version '5.0'
+    id 'io.codearte.nexus-staging' version '0.21.1'
 }
+
 
 sourceCompatibility = '1.7'
 targetCompatibility = '1.7'
@@ -142,27 +137,6 @@ shadowJar {
     }
 }
 
-task proguard(type: proguard.gradle.ProGuardTask, dependsOn:[shadowJar]) {
-    injars jar
-    outjars "$buildDir/libs/${project.name}-${version}-shrunk.jar"
-    libraryjars "${System.getProperty('java.home')}/lib/rt.jar"
-    keep "class ${caplet} { *; }"
-    keep "class Capsule { *; }"
-    keep "class capsule.Dependencies { *; }"
-    keepclassmembers 'enum * {**[] $VALUES;public static **[] values();public static ** valueOf(java.lang.String);}'
-    keep 'class capsule.org.eclipse.aether.AbstractForwardingRepositorySystemSession { *; }'
-    dontoptimize
-    dontobfuscate
-    dontwarn
-    //whyareyoukeeping 'class capsule.org.codehaus.plexus.**'
-    doLast {
-        logger.info("$buildDir/libs/${project.name}-${project.version}-shrunk.jar -> $buildDir/libs/${project.name}-${project.version}.jar")
-        def out = file("$buildDir/libs/${project.name}-${project.version}.jar")
-        if (out.exists())
-            out.delete()
-        file("$buildDir/libs/${project.name}-${version}-shrunk.jar").renameTo(out)
-    }
-}
 
 javadoc {
     options.noDeprecated = true
@@ -263,8 +237,6 @@ uploadArchives {
         }
     }
 }
-
-[assemble, build, install, signArchives, uploadArchives]*.dependsOn proguard
 
 install.repositories.mavenInstaller {
     pom.whenConfigured {
