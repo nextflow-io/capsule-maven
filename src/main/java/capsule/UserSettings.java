@@ -8,13 +8,13 @@
  */
 package capsule;
 
-import static capsule.DependencyManager.DEFAULT_LOCAL_MAVEN;
-import static capsule.DependencyManager.emptyToNull;
+import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
+
 import org.apache.maven.settings.Mirror;
 import org.apache.maven.settings.Proxy;
 import org.apache.maven.settings.Server;
@@ -36,6 +36,8 @@ import org.eclipse.aether.util.repository.DefaultProxySelector;
 import org.sonatype.plexus.components.cipher.DefaultPlexusCipher;
 import org.sonatype.plexus.components.cipher.PlexusCipherException;
 import org.sonatype.plexus.components.sec.dispatcher.DefaultSecDispatcher;
+import static capsule.DependencyManager.DEFAULT_LOCAL_MAVEN;
+import static capsule.DependencyManager.emptyToNull;
 
 /**
  * Reads Maven's settings.xml
@@ -59,7 +61,7 @@ final class UserSettings {
 
     private UserSettings() {
         final DefaultSettingsBuildingRequest request = new DefaultSettingsBuildingRequest();
-        request.setUserSettingsFile(DEFAULT_LOCAL_MAVEN.resolve(SETTINGS_XML).toFile());
+        request.setUserSettingsFile(getSettingsFile());
         request.setGlobalSettingsFile(MAVEN_HOME != null ? MAVEN_HOME.resolve("conf").resolve(SETTINGS_XML).toFile() : null);
         request.setSystemProperties(getSystemProperties());
 
@@ -77,6 +79,20 @@ final class UserSettings {
                 repositoryHome = DEFAULT_LOCAL_MAVEN.resolve("repository");
         } catch (SettingsBuildingException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private File getSettingsFile() {
+        File settings;
+        String home = emptyToNull(System.getenv("NXF_HOME"));
+        if( home == null ) {
+            home = new File(System.getProperty("user.home"), ".nextflow").toString();
+        }
+        if( (settings=Paths.get(home).resolve("maven.xml").toFile()).exists() ) {
+            return settings;
+        }
+        else {
+            return DEFAULT_LOCAL_MAVEN.resolve(SETTINGS_XML).toFile();
         }
     }
 

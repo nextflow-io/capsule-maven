@@ -8,8 +8,6 @@
  */
 package capsule;
 
-import static java.util.Collections.unmodifiableMap;
-
 import java.io.PrintStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -36,9 +34,14 @@ import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.collection.CollectRequest;
 import org.eclipse.aether.collection.CollectResult;
 import org.eclipse.aether.collection.DependencyCollectionException;
-import org.eclipse.aether.graph.*;
+import org.eclipse.aether.graph.Dependency;
+import org.eclipse.aether.graph.DependencyFilter;
+import org.eclipse.aether.graph.DependencyNode;
+import org.eclipse.aether.graph.DependencyVisitor;
+import org.eclipse.aether.graph.Exclusion;
 import org.eclipse.aether.impl.DefaultServiceLocator;
 import org.eclipse.aether.repository.LocalRepository;
+import org.eclipse.aether.repository.MirrorSelector;
 import org.eclipse.aether.repository.Proxy;
 import org.eclipse.aether.repository.ProxySelector;
 import org.eclipse.aether.repository.RemoteRepository;
@@ -54,6 +57,7 @@ import org.eclipse.aether.resolution.VersionResult;
 import org.eclipse.aether.util.artifact.JavaScopes;
 import org.eclipse.aether.util.graph.transformer.ConflictResolver;
 import org.eclipse.aether.version.Version;
+import static java.util.Collections.unmodifiableMap;
 
 /**
  * Uses Aether as the Maven dependency manager.
@@ -138,6 +142,15 @@ public class DependencyManager {
             RepositoryPolicy snapshotPolicy = allowSnapshots ? makeSnapshotPolicy(r) : new RepositoryPolicy(false, null, null);
 
             RemoteRepository repo = createRepo(r, releasePolicy, snapshotPolicy);
+            MirrorSelector mirrorSelector = getSession().getMirrorSelector();
+            if( mirrorSelector!=null ) {
+                RemoteRepository mirror = mirrorSelector.getMirror(repo);
+                if( mirror != null ) {
+                    log(LOG_QUIET, "Using mirror for repository " + repo.getId() + " => " + mirror.getUrl());
+                    repo = mirror;
+                }
+            }
+
             ProxySelector selector = getSession().getProxySelector();
             Proxy proxy = selector.getProxy(repo);
             if (proxy != null) {
@@ -193,6 +206,10 @@ public class DependencyManager {
         if (session == null)
             session = newRepositorySession(system, localRepo);
         return session;
+    }
+
+    void setSession( RepositorySystemSession session ) {
+        this.session = session;
     }
 
     protected RepositorySystemSession newRepositorySession(RepositorySystem system, LocalRepository localRepo) {
@@ -475,7 +492,12 @@ public class DependencyManager {
             releasePolicy = new RepositoryPolicy(releasePolicy.isEnabled(), releasePolicy.getUpdatePolicy(), RepositoryPolicy.CHECKSUM_POLICY_IGNORE);
             snapshotPolicy = releasePolicy;
         }
-        return new RemoteRepository.Builder(id, "default", url).setReleasePolicy(releasePolicy).setSnapshotPolicy(snapshotPolicy).build();
+
+        return new RemoteRepository
+                .Builder(id, "default", url)
+                .setReleasePolicy(releasePolicy)
+                .setSnapshotPolicy(snapshotPolicy)
+                .build();
     }
     //</editor-fold>
 
