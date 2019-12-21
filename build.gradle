@@ -17,22 +17,22 @@ targetCompatibility = '1.7'
 
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 
-group               = "co.paralleluniverse"
-version             = "1.0.3"
+group               = "io.nextflow"
+version             = "1.0.3.1"
 status              = "integration"
-description         = "Simple Java deployment"
-ext.url             = "https://github.com/puniverse/capsule"
-ext.vendor          = "Parallel Universe Software Co."
+description         = "Java packaging and deployment system"
+ext.url             = "https://github.com/nextflow-io/capsule-maven"
+ext.vendor          = "Nextflow.io"
 ext.licenseName     = "Eclipse Public License - v 1.0"
 ext.licenseUrl      = "http://www.eclipse.org/legal/epl-v10.html"
-ext.scmUrl          = "https://github.com/puniverse/capsule"
-ext.scmConnection   = "https://github.com/puniverse/capsule.git"
+ext.scmUrl          = "https://github.com/nextflow-io/capsule-maven"
+ext.scmConnection   = "https://github.com/nextflow-io/capsule-maven.git"
 ext.distDir         = "$buildDir/dist"
 ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
 
 ext.caplet = 'MavenCapsule'
 
-ext.capsuleVer          = '1.0.2'
+ext.capsuleVer          = '1.0.3.1'
 ext.aetherVer           = '1.1.0'
 ext.mavenVer            = '3.3.9'
 ext.plexusVer           = '1.6'
@@ -47,11 +47,14 @@ ext.truthVer            = '0.28'
 ext.jimfsVer            = '1.1'
 ext.mockitoVer          = '1.10.19'
 
+ext.nexusUsername = project.findProperty('nexusUsername')
+ext.nexusPassword = project.findProperty('nexusPassword')
+ext.nexusFullName = project.findProperty('nexusFullName')
+ext.nexusEmail = project.findProperty('nexusEmail')
+
 // User and Password are taken from ~/.gradle/gradle.properties
-if (!project.hasProperty("sonatypeUsername") || !project.hasProperty("sonatypePassword")) {
-    println "sonatype username or password not set"
-    ext.sonatypeUsername = ""
-    ext.sonatypePassword = ""
+if (!nexusUsername || !nexusPassword) {
+    throw new IllegalStateException("Sonatype username or password not set!")
 }
 
 repositories {
@@ -224,13 +227,14 @@ uploadArchives {
         mavenDeployer {
             beforeDeployment { deployment -> signing.signPom(deployment) }
 
-            repository(
-                url: (isReleaseVersion ?
-                        "https://oss.sonatype.org/service/local/staging/deploy/maven2" :
-                        "https://oss.sonatype.org/content/repositories/snapshots")) {
-                // User and Password are taken from ~/.gradle/gradle.properties
-                authentication(userName: project.sonatypeUsername, password: project.sonatypePassword)
+            repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                authentication(userName: nexusUsername, password: nexusPassword)
             }
+
+            snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+                authentication(userName: nexusUsername, password: nexusPassword)
+            }
+
             pom.project {
                 name project.name
                 packaging 'jar'
@@ -250,8 +254,9 @@ uploadArchives {
                 }
                 developers {
                     developer {
-                        id 'pron'
-                        name 'Ron Pressler'
+                        id nexusUsername
+                        name nexusFullName
+                        email nexusEmail
                     }
                 }
             }
