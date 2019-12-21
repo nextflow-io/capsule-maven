@@ -115,9 +115,10 @@ public final class ConsoleTransferListener extends AbstractTransferListener {
         transferCompleted(event);
 
         if (!(event.getException() instanceof MetadataNotFoundException)) {
-            println("Transfer failed: " + event.getException() + (verbose ? "" : " (for stack trace, run with -Dcapsule.log=verbose)"));
-            if (verbose)
+            if (verbose) {
+                println("Transfer failed: " + event.getException());
                 event.getException().printStackTrace(out);
+            }
         }
     }
 

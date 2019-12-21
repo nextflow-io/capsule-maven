@@ -9,11 +9,14 @@
 package capsule;
 
 import java.io.PrintStream;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.eclipse.aether.AbstractRepositoryListener;
 import org.eclipse.aether.RepositoryEvent;
 
 public final class ConsoleRepositoryListener extends AbstractRepositoryListener {
+    private final Set<String> eventsCache = new HashSet<>();
     private final PrintStream out;
     private final boolean verbose;
 
@@ -32,8 +35,11 @@ public final class ConsoleRepositoryListener extends AbstractRepositoryListener 
     }
 
     @Override public void artifactDownloading(RepositoryEvent ev) {
-        if (!verbose)
-            println("Downloading dependency " + ev.getArtifact());
+        if (!verbose) {
+            String msg = "Downloading dependency " + ev.getArtifact();
+            if( eventsCache.add(msg) && !msg.contains(":pom:") )
+                println(msg);
+        }
         else
             println("Downloading artifact " + ev.getArtifact() + " from " + ev.getRepository());
     }
