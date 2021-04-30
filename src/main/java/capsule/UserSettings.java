@@ -186,7 +186,7 @@ final class UserSettings {
             }
         };
 
-        final DefaultSettingsDecrypter decrypter = new DefaultSettingsDecrypter();
+        final DefaultSettingsDecrypter decrypter = new DefaultSettingsDecrypter(secDispatcher);
 
         try {
             java.lang.reflect.Field field = decrypter.getClass().getDeclaredField("securityDispatcher");
