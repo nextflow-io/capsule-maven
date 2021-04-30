@@ -175,7 +175,7 @@ public class MavenCapsuleTest {
         deps.put(dep, as);
 
         when(dm.resolveDependency(dep, type)).thenReturn(as);
-        when(dm.resolveDependencies(anyList(), eq(type))).thenAnswer(new Answer<List<Path>>() {
+        when(dm.resolveDependencies(anyListOf(String.class), eq(type))).thenAnswer(new Answer<List<Path>>() {
             @Override
             public List<Path> answer(InvocationOnMock invocation) throws Throwable {
                 List<String> coords = (List<String>) invocation.getArguments()[0];
